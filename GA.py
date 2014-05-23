@@ -101,7 +101,7 @@ def crossover(seq1,seq2):
     mSeq2 = seq2[:point*3]+seq1[point*3:]
     return mSeq1,mSeq2
 
-def selection(gen,dict,dictU,dictA):
+def selection(gen,dict,dictU,dictA,f):
      scores = []
      for ch in gen:
          scores += [score(ch,dict,dictU,dictA)]
@@ -109,6 +109,13 @@ def selection(gen,dict,dictU,dictA):
      #print scores
      scores2 = sorted(scores)
      #print scores2
+     h = scores2[1]
+     l = scores2[-1]
+     su = 0
+     for s in scores2:
+         su += s
+     avg = su/200
+     f.write(str(h)+','+str(l)+','+str(avg)+'\n')
      thr = scores2[100]
      print thr
      li = 200
@@ -137,17 +144,17 @@ def main_run():
     seq2 = mutation(orgSeq,dict,dictA)
     print score(mutation(orgSeq,dict,dictA),dict,dictU,dictA)
     print score(mutation(seq2,dict,dictA),dict,dictU,dictA)
-
+    out = file("result.csv",'w')
     gen = []
     for i in range(200):
         gen += [mutation(orgSeq,dict,dictA)]
     #print gen
-    selection(gen,dict,dictU,dictA)
+    selection(gen,dict,dictU,dictA,out)
     #print len(gen)
 
     #交配和变异
-
-    for i in range(150):
+  
+    for i in range(400):
         oldgen = gen
         gen = []
         for i in range(100):
@@ -160,17 +167,10 @@ def main_run():
             seq2 = mutation(seq2,dict,dictA)
             gen += [seq1,seq2]
 
-        selection(gen,dict,dictU,dictA)
+        selection(gen,dict,dictU,dictA,out)
 
     print gen
-    #s = ''
-    #for i in range(0,17*34):
-    #    s+=dict[orgSeq[i*3:i*3+3]]
-    #print s
-
-    #print orgSeq
-
-
+    out.close()
     return
 if __name__ == "__main__":
    main_run()
