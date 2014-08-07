@@ -168,9 +168,13 @@ def main_run():
             gen += [seq1,seq2]
 
         selection(gen,dict,dictU,dictA,out)
-
-    print gen
+    
+    for sequence in gen:
+        out.write(sequence+','+str(score(sequence,dict,dictU,dictA))+'\n')
+        print sequence
+        print score(sequence,dict,dictU,dictA)
     out.close()
     return
+
 if __name__ == "__main__":
    main_run()
