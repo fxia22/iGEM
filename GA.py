@@ -2,7 +2,7 @@
 
 import os
 import random
-
+import pickle
 
 def input(filename):
     fin = file(filename,'r')
@@ -22,6 +22,18 @@ def createCodonDic(filename):
         line = fin.readline()
     fin.close()
     return dict
+
+def createEnzymeList(filename):
+    lst = [];
+    fin = file(filename,'r')
+    line = fin.readline()
+    while line:
+        sline = line[0:-1].split(',')
+        #print sline
+        lst.append(sline[0])
+        line = fin.readline()
+    fin.close()
+    return lst
 
 
 def createUsageDic(filename):
@@ -53,13 +65,17 @@ def createAmoDic(filename):
     fin.close()
     return dict
 
-def score(seq,dict,dictU,dictA):
+def score(seq,dict,dictU,dictA,listE):
     #coefficient lambda
     usageScore = 0.0
-    l =  0.5
+    l =  0.05
     #print seq
     for i in range(0,17*34):
-        usageScore+=dictU[seq[i*3:i*3+3]]
+        usg = dictU[seq[i*3:i*3+3]]
+        if (usg>0.09):
+            usageScore+=usg
+        else:
+            usageScore-=300
     #print usageScore
 
     repScore = 0.0
@@ -71,7 +87,26 @@ def score(seq,dict,dictU,dictA):
                 if seq1[k] != seq2[k]:
                     repScore += 1
     #print repScore
-    score = repScore*l + usageScore*(1-l)
+    pnt = 0.0
+    listE1 = listE[0:6]
+    listE2 = listE[6:-1]
+    for pattern in listE1:
+        if pattern in seq:
+            pnt -=300
+            
+    for pattern in listE2:
+        if pattern in seq:
+            pnt -=20
+            
+           # print 'found'
+        #    print pattern
+            
+    
+    
+    score = repScore*l + usageScore*(1-l)+pnt
+    #print('rep:',repScore);
+    #print('usg:',usageScore);
+    #print('enz:',pnt);
     return score
 
 def mutation(seq,dict,dictA):
@@ -101,10 +136,10 @@ def crossover(seq1,seq2):
     mSeq2 = seq2[:point*3]+seq1[point*3:]
     return mSeq1,mSeq2
 
-def selection(gen,dict,dictU,dictA,f):
+def selection(gen,dict,dictU,dictA,listE,f):
      scores = []
      for ch in gen:
-         scores += [score(ch,dict,dictU,dictA)]
+         scores += [score(ch,dict,dictU,dictA,listE)]
          #print ch
      #print scores
      scores2 = sorted(scores)
@@ -133,28 +168,30 @@ def main_run():
     dict = createCodonDic('dic.txt')
     dictU = createUsageDic('dic.txt')
     dictA = createAmoDic('dic.txt')
+    listE = createEnzymeList('enzyme.txt')
+    print listE
     print dict
     print dictU
     print dictA
 
     #建立初始种群
     #建立初始种群的策略是对原始的序列进行一个位置的变异
-    s = score(orgSeq,dict,dictU,dictA)
+    s = score(orgSeq,dict,dictU,dictA,listE)
     print s
     seq2 = mutation(orgSeq,dict,dictA)
-    print score(mutation(orgSeq,dict,dictA),dict,dictU,dictA)
-    print score(mutation(seq2,dict,dictA),dict,dictU,dictA)
+    print score(mutation(orgSeq,dict,dictA),dict,dictU,dictA,listE)
+    print score(mutation(seq2,dict,dictA),dict,dictU,dictA,listE)
     out = file("result.csv",'w')
     gen = []
     for i in range(200):
         gen += [mutation(orgSeq,dict,dictA)]
     #print gen
-    selection(gen,dict,dictU,dictA,out)
+    selection(gen,dict,dictU,dictA,listE,out)
     #print len(gen)
 
     #交配和变异
   
-    for i in range(400):
+    for i in range(600):
         oldgen = gen
         gen = []
         for i in range(100):
@@ -167,12 +204,17 @@ def main_run():
             seq2 = mutation(seq2,dict,dictA)
             gen += [seq1,seq2]
 
-        selection(gen,dict,dictU,dictA,out)
+        selection(gen,dict,dictU,dictA,listE,out)
     
     for sequence in gen:
-        out.write(sequence+','+str(score(sequence,dict,dictU,dictA))+'\n')
+        out.write(sequence+','+str(score(sequence,dict,dictU,dictA,listE))+'\n')
         print sequence
-        print score(sequence,dict,dictU,dictA)
+        print score(sequence,dict,dictU,dictA,listE)
+    
+    
+    with open('objs.pickle', 'w') as f:
+        pickle.dump([gen], f)
+    
     out.close()
     return
 
